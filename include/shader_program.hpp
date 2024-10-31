@@ -10,7 +10,10 @@ public:
   explicit ShaderProgram(
       const std::filesystem::path &vertexShaderPath,
       const std::filesystem::path &fragmentShaderPath) noexcept;
-  void use() const noexcept;
+  void bind() const noexcept;
+  void unbind() const noexcept;
+
+  template <typename T> void set(std::string_view name, T value) const noexcept;
 
 private:
   std::uint32_t m_ID{0};

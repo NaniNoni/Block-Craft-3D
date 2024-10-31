@@ -12,4 +12,5 @@ public:
 
 private:
   Window m_Window{WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE};
+  bool m_ShowDebugMenu{false};
 };

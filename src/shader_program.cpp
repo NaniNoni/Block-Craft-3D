@@ -1,11 +1,8 @@
 #include "shader_program.hpp"
-#include "window.hpp"
-#include <cstdlib>
-#include <filesystem>
+
 #include <fstream>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
+#include <glad/gl.h>
+#include <spdlog/spdlog.h>
 
 const std::string_view debugVertexShaderSource =
     R"(
@@ -50,7 +47,7 @@ ShaderProgram::ShaderProgram(
     vertexShaderSource = readFile(vertexShaderPath);
     fragmentShaderSource = readFile(fragmentShaderPath);
   } catch (const std::exception &e) {
-    std::cout << e.what();
+    spdlog::warn(e.what());
     std::exit(EXIT_FAILURE);
   }
 
@@ -60,7 +57,6 @@ ShaderProgram::ShaderProgram(
       createShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
 
   m_ID = createProgram(vertexShader, fragmentShader);
-  use();
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 }
@@ -76,12 +72,12 @@ ShaderProgram::ShaderProgram() noexcept {
       createShader(GL_FRAGMENT_SHADER, debugFragmentShaderSource);
 
   m_ID = createProgram(vertexShader, fragmentShader);
-  use();
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 }
 
-void ShaderProgram::use() const noexcept { glUseProgram(m_ID); }
+void ShaderProgram::bind() const noexcept { glUseProgram(m_ID); }
+void ShaderProgram::unbind() const noexcept { glUseProgram(0); }
 
 std::uint32_t
 ShaderProgram::createShader(std::uint32_t shaderType,
@@ -100,8 +96,10 @@ ShaderProgram::createShader(std::uint32_t shaderType,
     char *infoLog = new char[logLength];
 
     glGetShaderInfoLog(id, logLength, nullptr, infoLog);
-    std::cout << "Failed to compile" << shaderType << " shader." << infoLog
-              << '\n';
+    spdlog::error("Failed to compile {} shader: {}", infoLog);
+    // FIXME: this
+    // std::cout << "Failed to compile" << shaderType << " shader." << infoLog
+    //           << '\n';
 
     delete[] infoLog;
   }
@@ -126,10 +124,55 @@ ShaderProgram::createProgram(std::uint32_t vertexShader,
     char *infoLog = new char[logLength];
 
     glGetShaderInfoLog(ID, logLength, nullptr, infoLog);
-    std::cout << "Failed to link shader program." << infoLog << '\n';
+    spdlog::error("Failed to link shader program: {}", infoLog);
 
     delete[] infoLog;
   }
 
   return ID;
+}
+
+//
+// Uniform setting template specializations
+//
+template <typename T>
+void ShaderProgram::set(std::string_view name, T value) const noexcept {
+  static_assert(sizeof(T) == 0,
+                "ShaderProgram::set is not specialized for this type");
+}
+
+template <>
+void ShaderProgram::set<bool>(std::string_view name,
+                              bool value) const noexcept {
+  const auto location = glGetUniformLocation(m_ID, name.data());
+
+  if (location == -1) {
+    spdlog::warn("{} doens't correspond to any uniform", name);
+  }
+
+  glUniform1i(location, value);
+}
+
+template <>
+void ShaderProgram::set<std::int32_t>(std::string_view name,
+                                      std::int32_t value) const noexcept {
+  const auto location = glGetUniformLocation(m_ID, name.data());
+
+  if (location == -1) {
+    spdlog::warn("{} doens't correspond to any uniform", name);
+  }
+
+  glUniform1i(location, value);
+}
+
+template <>
+void ShaderProgram::set<float>(std::string_view name,
+                               float value) const noexcept {
+  const auto location = glGetUniformLocation(m_ID, name.data());
+
+  if (location == -1) {
+    spdlog::warn("{} doens't correspond to any uniform", name);
+  }
+
+  glUniform1f(location, value);
 }
