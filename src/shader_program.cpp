@@ -1,7 +1,9 @@
 #include "shader_program.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #include <fstream>
 #include <glad/gl.h>
+#include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
 
 const std::string_view debugVertexShaderSource =
@@ -96,10 +98,9 @@ ShaderProgram::createShader(std::uint32_t shaderType,
     char *infoLog = new char[logLength];
 
     glGetShaderInfoLog(id, logLength, nullptr, infoLog);
-    spdlog::error("Failed to compile {} shader: {}", infoLog);
-    // FIXME: this
-    // std::cout << "Failed to compile" << shaderType << " shader." << infoLog
-    //           << '\n';
+    spdlog::error("Failed to compile {} shader: {}",
+                  shaderType == GL_VERTEX_SHADER ? "vertex" : "fragment",
+                  infoLog);
 
     delete[] infoLog;
   }
@@ -133,46 +134,16 @@ ShaderProgram::createProgram(std::uint32_t vertexShader,
 }
 
 //
-// Uniform setting template specializations
+// Uniform setting overloads
 //
-template <typename T>
-void ShaderProgram::set(std::string_view name, T value) const noexcept {
-  static_assert(sizeof(T) == 0,
-                "ShaderProgram::set is not specialized for this type");
-}
-
-template <>
-void ShaderProgram::set<bool>(std::string_view name,
-                              bool value) const noexcept {
+//
+void ShaderProgram::set(std::string_view name,
+                        const glm::mat4 &value) const noexcept {
   const auto location = glGetUniformLocation(m_ID, name.data());
-
   if (location == -1) {
-    spdlog::warn("{} doens't correspond to any uniform", name);
+    spdlog::warn("{} doesn't correspond to any uniform", name);
+    return;
   }
 
-  glUniform1i(location, value);
-}
-
-template <>
-void ShaderProgram::set<std::int32_t>(std::string_view name,
-                                      std::int32_t value) const noexcept {
-  const auto location = glGetUniformLocation(m_ID, name.data());
-
-  if (location == -1) {
-    spdlog::warn("{} doens't correspond to any uniform", name);
-  }
-
-  glUniform1i(location, value);
-}
-
-template <>
-void ShaderProgram::set<float>(std::string_view name,
-                               float value) const noexcept {
-  const auto location = glGetUniformLocation(m_ID, name.data());
-
-  if (location == -1) {
-    spdlog::warn("{} doens't correspond to any uniform", name);
-  }
-
-  glUniform1f(location, value);
+  glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }

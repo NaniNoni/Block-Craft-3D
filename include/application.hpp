@@ -1,5 +1,6 @@
 #pragma once
 
+#include "camera.hpp"
 #include "window.hpp"
 
 const std::int32_t WINDOW_WIDTH = 800;
@@ -12,5 +13,6 @@ public:
 
 private:
   Window m_Window{WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE};
+  Camera m_Camera{{0.0f, 0.0f, 3.0f}, 0.05f};
   bool m_ShowDebugMenu{false};
 };

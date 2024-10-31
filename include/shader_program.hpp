@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <glm/glm.hpp>
 #include <string_view>
 
 class ShaderProgram {
@@ -13,7 +14,7 @@ public:
   void bind() const noexcept;
   void unbind() const noexcept;
 
-  template <typename T> void set(std::string_view name, T value) const noexcept;
+  void set(std::string_view name, const glm::mat4 &value) const noexcept;
 
 private:
   std::uint32_t m_ID{0};

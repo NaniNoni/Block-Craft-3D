@@ -61,6 +61,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 	src/vertex_buffer.cpp
 	src/index_buffer.cpp
 	src/texture.cpp
+	src/camera.cpp
 )
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE include)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE imgui glad glm spdlog stb_image)

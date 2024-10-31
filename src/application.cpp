@@ -8,6 +8,8 @@
 #include "vertex_buffer.hpp"
 #include "window.hpp"
 
+#include <glm/ext.hpp>
+#include <glm/glm.hpp>
 #include <imgui.h>
 
 std::uint32_t indices[] = {
@@ -19,18 +21,57 @@ std::uint32_t indices[] = {
 void Application::run() noexcept {
   // Render in wireframe mode
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  glEnable(GL_DEPTH_TEST);
 
   std::uint32_t VAO;
   glGenVertexArrays(1, &VAO);
   glBindVertexArray(VAO);
 
-  float vertices[] = {
-      // positions        // texture coords
-      0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
-      0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
-      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
-      -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
-  };
+  // clang-format off
+float vertices[] = {
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+};
+  // clang-format on
 
   // Put vertices in VRAM
   VertexBuffer VBO{vertices, sizeof(vertices)};
@@ -59,8 +100,6 @@ void Application::run() noexcept {
                               "../shaders/fragment.glsl"};
   shaderProgram.bind();
 
-  shaderProgram.set("ligma_value", 0.5f);
-
   m_Window.setKeyCallback([&](std::int32_t key, std::int32_t scancode,
                               std::int32_t action, std::int32_t mods) {
     if (action != GLFW_PRESS) {
@@ -72,10 +111,53 @@ void Application::run() noexcept {
       m_ShowDebugMenu = !m_ShowDebugMenu;
       break;
     }
+
+    case GLFW_KEY_W: {
+      m_Camera.position += m_Camera.getFront() * m_Camera.getSpeed();
+      break;
+    }
+    case GLFW_KEY_S: {
+      m_Camera.position -= m_Camera.getFront() * m_Camera.getSpeed();
+      break;
+    }
+    case GLFW_KEY_A: {
+      m_Camera.position -=
+          glm::normalize(glm::cross(m_Camera.getFront(), m_Camera.getUp())) *
+          m_Camera.getSpeed();
+      break;
+    }
+    case GLFW_KEY_D: {
+      m_Camera.position +=
+          glm::normalize(glm::cross(m_Camera.getFront(), m_Camera.getUp())) *
+          m_Camera.getSpeed();
+      break;
+    }
     }
   });
 
+  glm::mat4 model = glm::mat4(1.0f);
+  model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+  glm::mat4 view = glm::mat4(1.0f);
+  // note that we're translating the scene in the reverse direction of where
+  // we want to move
+  view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+  glm::mat4 projection;
+  projection =
+      glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+
+  shaderProgram.set("model", model);
+  shaderProgram.set("view", view);
+  shaderProgram.set("projection", projection);
+
+  float deltaTime = 0.0f; // Time between current frame and last frame
+  float lastFrame = 0.0f; // Time of last frame
+
   while (!m_Window.shouldClose()) {
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+    m_Camera.setSpeed(2.5f * deltaTime);
+
     m_Window.pollEvents();
     m_Window.newFrame();
 
@@ -103,9 +185,10 @@ void Application::run() noexcept {
 
     ImGui::Render();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     m_Window.swapBuffers();
